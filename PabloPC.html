@@ -1,0 +1,1359 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pablo-PC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --desk-1:#1d2430;
+  --desk-2:#2b3b47;
+  --panel:#171c24;
+  --panel-2:#1f2630;
+  --line:#313b48;
+  --ink:#e6ebf1;
+  --ink-dim:#93a1b1;
+  --accent:#e8b14c;
+  --good:#5fc9a0;
+  --bad:#e0605e;
+  --radius:10px;
+  --ui: "Figtree", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+:root[data-theme="light"]{
+  --desk-1:#cfd8de; --desk-2:#aebcc6; --panel:#f3f5f8; --panel-2:#e7ebf1;
+  --line:#c3ccd6; --ink:#1b2129; --ink-dim:#5c6976;
+}
+*{box-sizing:border-box;}
+html,body{height:100%;margin:0;}
+body{
+  font-family:var(--ui);
+  color:var(--ink);
+  background:#11151b;
+  overflow:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+button{font-family:inherit;color:inherit;}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+ 
+/* ---------- screen ---------- */
+#screen{position:fixed;inset:0;overflow:hidden;}
+#desktop{
+  position:absolute;inset:0;
+  background:
+    radial-gradient(120% 90% at 22% 12%, var(--desk-2) 0%, var(--desk-1) 62%, #10151c 100%);
+  transition:filter .4s ease, background .6s ease;
+}
+#desktop.glitchy{ animation:deskJitter 5s infinite; }
+@keyframes deskJitter{
+  0%,96%,100%{transform:translate(0,0);}
+  97%{transform:translate(-2px,1px);}
+  98%{transform:translate(2px,-1px);}
+}
+.hue-shift{filter:hue-rotate(28deg) saturate(1.25);}
+.hue-shift-2{filter:hue-rotate(-40deg) saturate(1.4) contrast(1.08);}
+ 
+/* ---------- icons ---------- */
+#icons{position:absolute;inset:18px auto 74px 18px;display:flex;flex-direction:column;flex-wrap:wrap;gap:6px;max-height:calc(100% - 110px);}
+.icon{
+  width:92px;padding:10px 6px 8px;border:1px solid transparent;border-radius:var(--radius);
+  display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer;
+  background:none;font-size:12.5px;line-height:1.25;text-align:center;
+  transition:background .15s ease, transform .25s ease;
+}
+.icon:hover{background:rgba(255,255,255,.08);}
+.icon .glyph{
+  width:44px;height:44px;border-radius:12px;display:grid;place-items:center;
+  font-size:21px;background:var(--panel-2);border:1px solid var(--line);
+  box-shadow:0 2px 10px rgba(0,0,0,.28);
+}
+.icon.tilt{transform:rotate(-7deg) translateY(4px);}
+ 
+/* ---------- status widget ---------- */
+#status{
+  position:absolute;top:18px;right:18px;width:206px;padding:13px 15px 14px;
+  background:rgba(23,28,36,.82);border:1px solid var(--line);border-radius:var(--radius);
+  backdrop-filter:blur(8px);
+}
+:root[data-theme="light"] #status{background:rgba(243,245,248,.85);}
+#status .lbl{font-size:10.5px;letter-spacing:.14em;color:var(--ink-dim);font-family:var(--mono);}
+#status .val{font-family:var(--mono);font-size:29px;margin:4px 0 9px;font-weight:500;color:var(--good);transition:color .5s;}
+#status .bar{height:5px;border-radius:3px;background:var(--line);overflow:hidden;}
+#status .fill{height:100%;width:100%;background:var(--good);transition:width .7s ease, background .7s ease;}
+#status.warn .val,#status.warn .fill{color:var(--accent);background-color:var(--accent);}
+#status.warn .val{background:none;}
+#status.crit .val{color:var(--bad);}
+#status.crit .fill{background:var(--bad);}
+#status.crit{animation:statPulse 1.6s infinite;}
+@keyframes statPulse{50%{border-color:var(--bad);}}
+ 
+/* ---------- windows ---------- */
+.win{
+  position:absolute;min-width:260px;background:var(--panel);border:1px solid var(--line);
+  border-radius:12px;box-shadow:0 18px 50px rgba(0,0,0,.5);display:flex;flex-direction:column;
+  overflow:hidden;
+}
+.win.opening{animation:winIn .16s ease-out;}
+@keyframes winIn{from{opacity:0;transform:scale(.97) translateY(6px);}}
+.win.shaking{animation:winShake .09s infinite;}
+@keyframes winShake{0%{transform:translate(0,0);}25%{transform:translate(2px,-2px);}50%{transform:translate(-2px,1px);}75%{transform:translate(1px,2px);}}
+.titlebar{
+  height:38px;display:flex;align-items:center;gap:9px;padding:0 8px 0 13px;
+  background:var(--panel-2);border-bottom:1px solid var(--line);cursor:grab;user-select:none;flex:none;
+}
+.titlebar:active{cursor:grabbing;}
+.titlebar .t{font-size:13px;font-weight:600;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.tb-btn{
+  width:26px;height:26px;border:0;border-radius:7px;background:transparent;cursor:pointer;
+  display:grid;place-items:center;font-size:14px;color:var(--ink-dim);
+}
+.tb-btn:hover{background:rgba(255,255,255,.1);color:var(--ink);}
+.tb-btn.close:hover{background:var(--bad);color:#fff;}
+.win-body{flex:1;overflow:auto;padding:16px;font-size:13.5px;line-height:1.55;}
+.win-body.flush{padding:0;}
+.win.min{display:none;}
+ 
+/* ---------- taskbar ---------- */
+#taskbar{
+  position:absolute;left:14px;right:14px;bottom:12px;height:50px;display:flex;align-items:center;
+  gap:8px;padding:0 12px;background:rgba(23,28,36,.88);border:1px solid var(--line);
+  border-radius:14px;backdrop-filter:blur(10px);
+}
+:root[data-theme="light"] #taskbar{background:rgba(243,245,248,.9);}
+#logo{font-family:var(--mono);font-size:12px;color:var(--accent);padding-right:10px;border-right:1px solid var(--line);margin-right:4px;}
+#tasks{display:flex;gap:6px;flex:1;overflow:hidden;}
+.task{
+  height:32px;padding:0 12px;border:1px solid var(--line);background:var(--panel-2);border-radius:8px;
+  font-size:12.5px;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:7px;
+}
+.task.active{border-color:var(--accent);}
+#clock{font-family:var(--mono);font-size:13px;color:var(--ink-dim);}
+#clock.bad{color:var(--bad);}
+ 
+/* ---------- toasts ---------- */
+#toasts{position:absolute;right:18px;bottom:76px;display:flex;flex-direction:column;gap:9px;align-items:flex-end;z-index:9000;}
+.toast{
+  max-width:290px;padding:12px 15px;background:var(--panel);border:1px solid var(--line);
+  border-left:3px solid var(--accent);border-radius:10px;font-size:13px;box-shadow:0 10px 30px rgba(0,0,0,.45);
+  animation:toastIn .2s ease-out;
+}
+.toast.creep{border-left-color:var(--bad);font-family:var(--mono);font-size:12.5px;}
+@keyframes toastIn{from{opacity:0;transform:translateX(18px);}}
+.toast.out{opacity:0;transform:translateX(18px);transition:.25s;}
+ 
+/* ---------- generic ui bits ---------- */
+.btn{
+  padding:8px 14px;border:1px solid var(--line);background:var(--panel-2);border-radius:8px;
+  font-size:13px;cursor:pointer;
+}
+.btn:hover{border-color:var(--accent);}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#1a1207;font-weight:600;}
+.row{display:flex;gap:8px;align-items:center;}
+input[type=text]{
+  background:var(--panel-2);border:1px solid var(--line);border-radius:8px;color:var(--ink);
+  padding:9px 12px;font-size:13px;font-family:inherit;width:100%;
+}
+.muted{color:var(--ink-dim);}
+.mono{font-family:var(--mono);}
+hr{border:0;border-top:1px solid var(--line);margin:14px 0;}
+ 
+/* file list */
+.filerow{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;cursor:pointer;}
+.filerow:hover{background:var(--panel-2);}
+.filerow .fi{width:22px;text-align:center;}
+.filerow .sz{margin-left:auto;font-family:var(--mono);font-size:11.5px;color:var(--ink-dim);}
+ 
+/* calculator */
+.calc-disp{background:var(--panel-2);border:1px solid var(--line);border-radius:9px;padding:14px;text-align:right;font-family:var(--mono);font-size:26px;min-height:58px;word-break:break-all;}
+.calc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:12px;}
+.calc-grid button{height:44px;border:1px solid var(--line);background:var(--panel-2);border-radius:9px;font-size:15px;cursor:pointer;}
+.calc-grid button:hover{border-color:var(--accent);}
+.calc-grid button.op{color:var(--accent);}
+ 
+/* browser */
+.bar{display:flex;gap:8px;padding:10px;border-bottom:1px solid var(--line);background:var(--panel-2);}
+.result{padding:14px 16px;border-bottom:1px solid var(--line);}
+.result h4{margin:0 0 4px;font-size:14px;color:#7fb2ef;font-weight:600;}
+.result p{margin:0;font-size:12.5px;color:var(--ink-dim);}
+ 
+/* progress */
+.prog{height:9px;border-radius:5px;background:var(--line);overflow:hidden;margin:14px 0 6px;}
+.prog i{display:block;height:100%;width:0;background:var(--accent);transition:width .25s linear;}
+ 
+/* overlays */
+#flash{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none;z-index:9999;}
+#boot{
+  position:absolute;inset:0;background:#05070a;z-index:9500;display:none;
+  flex-direction:column;align-items:center;justify-content:center;gap:18px;font-family:var(--mono);
+  color:#cfd7e0;font-size:13.5px;
+}
+#boot .spin{width:26px;height:26px;border:2px solid #2a3340;border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+#boot .lines{min-height:110px;width:min(440px,82vw);}
+#boot .lines div{opacity:.85;}
+ 
+#menu{
+  position:absolute;inset:0;background:#06080c;z-index:9600;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:0;text-align:center;padding:24px;
+}
+#menu h1{font-family:var(--mono);font-size:clamp(38px,9vw,74px);margin:0;letter-spacing:.06em;font-weight:500;}
+#menu .sub{font-family:var(--mono);color:var(--ink-dim);font-size:13px;margin:14px 0 30px;min-height:20px;}
+#menu .lines{font-family:var(--mono);font-size:15px;min-height:96px;color:var(--ink);}
+#menu .lines div{margin:6px 0;opacity:0;animation:fadeUp .5s forwards;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+.fade-black{animation:toBlack 2.4s forwards;}
+@keyframes toBlack{to{filter:brightness(0);}}
+ 
+.cursor-note{
+  position:absolute;z-index:9400;font-family:var(--mono);font-size:12px;padding:6px 10px;
+  background:var(--panel);border:1px solid var(--line);border-radius:8px;pointer-events:none;
+  box-shadow:0 6px 20px rgba(0,0,0,.4);
+}
+.hidden{display:none !important;}
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:.01ms !important;animation-iteration-count:1 !important;}
+}
+</style>
+</head>
+<body>
+<div id="screen">
+  <div id="desktop">
+    <div id="icons"></div>
+ 
+    <div id="status">
+      <div class="lbl">SYSTEM STATUS</div>
+      <div class="val" id="statusVal">100%</div>
+      <div class="bar"><div class="fill" id="statusFill"></div></div>
+    </div>
+ 
+    <div id="windows"></div>
+    <div id="toasts"></div>
+ 
+    <div id="taskbar">
+      <div id="logo">PABLO-PC</div>
+      <div id="tasks"></div>
+      <div id="clock">--:--</div>
+    </div>
+  </div>
+ 
+  <div id="flash"></div>
+ 
+  <div id="boot">
+    <div style="font-family:var(--mono);font-size:22px;letter-spacing:.14em;">PABLO-PC</div>
+    <div class="spin"></div>
+    <div class="lines" id="bootLines"></div>
+  </div>
+ 
+  <div id="menu">
+    <h1>PABLO-PC</h1>
+    <div class="sub" id="menuSub">A completely normal computer.</div>
+    <div class="lines" id="menuLines"></div>
+    <button class="btn primary" id="menuBtn" style="padding:12px 26px;font-size:14px;">Turn on</button>
+    <p class="muted" style="max-width:420px;font-size:12px;margin-top:26px;line-height:1.6;">
+      Everything here is simulated in this page. Nothing on your real computer is touched.
+      Sound is off until you press play in Music.
+    </p>
+  </div>
+</div>
+ 
+<script>
+"use strict";
+ 
+/* =========================================================
+   STATE
+   ========================================================= */
+const S = {
+  running:false,
+  status:100,
+  points:0,
+  phase1Done:false,
+  startedAt:0,
+  level:1,
+ 
+  appsOpened:0,
+  openCount:{},          // per app
+  filesInspected:0,
+  musicStarted:0,
+  gamePlayed:0,
+  calculatorUsed:0,
+  trashOpened:0,
+  browserSearches:0,
+  windowsClosed:0,
+  eventsTriggered:0,
+ 
+  calcFixed:false,
+  homeworkStage:0,
+  trashHasFile:false,
+  virusUnlocked:false,
+  virusDownloaded:false,
+  updated:false,
+  notesSelfOpens:0,
+  closeNags:0,
+  settingsBroken:false,
+  musicTrolled:false,
+  gameTrolled:false,
+  majorBusy:false,
+  finished:false,
+  run:1,
+  clockOffset:0
+};
+ 
+const FILES = {
+  Documents:[
+    {n:"homework.txt", s:"2 KB", body:"the essay is due tomorrow. it has been due tomorrow for eleven days."},
+    {n:"recipes.txt", s:"1 KB", body:"1. boil water\n2. forget about it\n3. order food"},
+    {n:"important.txt", s:"0 KB", body:"(empty)"},
+    {n:"budget.csv", s:"4 KB", body:"coffee,89\nrent,too much\nplants,3\nplants,7\nplants,19"}
+  ],
+  Pictures:[
+    {n:"beach_2019.png", s:"1.2 MB", body:"A beach. Or a wall. Hard to say at this resolution."},
+    {n:"screenshot_01.png", s:"340 KB", body:"A screenshot of this file explorer, taken inside this file explorer."},
+    {n:"dog.png", s:"880 KB", body:"Not a dog."}
+  ],
+  Downloads:[
+    {n:"invoice.pdf", s:"212 KB", body:"AMOUNT DUE: 0.00\nTHANK YOU FOR YOUR BUSINESS"},
+    {n:"setup_old.zip", s:"6 MB", body:"Archive is corrupt. It has always been corrupt."}
+  ],
+  Trash:[]
+};
+let FILES_BASE = JSON.parse(JSON.stringify(FILES));
+ 
+const APPS = [
+  {id:"browser",  name:"Browser",    glyph:"◍"},
+  {id:"files",    name:"Files",      glyph:"▤"},
+  {id:"calc",     name:"Calculator", glyph:"÷"},
+  {id:"notes",    name:"Notes",      glyph:"✎"},
+  {id:"music",    name:"Music",      glyph:"♪"},
+  {id:"games",    name:"Games",      glyph:"◈"},
+  {id:"settings", name:"Settings",   glyph:"⚙"},
+  {id:"trash",    name:"Trash",      glyph:"⌫"}
+];
+ 
+const $  = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const rnd = a => a[Math.floor(Math.random()*a.length)];
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+ 
+/* =========================================================
+   PROGRESSION
+   ========================================================= */
+function score(pts){
+  if(!S.running || S.finished) return;
+  S.points += pts;
+  S.status = clamp(Math.round(100 - S.points), 0, 100);
+  paintStatus();
+  if(S.status === 0 && !S.finished) finalSequence();
+}
+function paintStatus(){
+  const box=$("#status"), v=$("#statusVal"), f=$("#statusFill");
+  v.textContent = S.status + "%";
+  f.style.width = S.status + "%";
+  box.classList.toggle("warn", S.status<=70 && S.status>32);
+  box.classList.toggle("crit", S.status<=32);
+  S.level = S.status>78?1 : S.status>52?2 : S.status>26?3 : 4;
+  const d=$("#desktop");
+  d.classList.toggle("glitchy", S.level>=3);
+  if(S.level>=4) d.classList.add("hue-shift-2");
+}
+ 
+/* =========================================================
+   WINDOW MANAGER
+   ========================================================= */
+let z = 100;
+const openWins = new Map(); // id -> element
+ 
+function makeWindow(opts){
+  const {id, title, w=460, h=340, body, onClose, noClose=false, nagClose=false} = opts;
+  if(openWins.has(id)){ focusWin(openWins.get(id)); return openWins.get(id); }
+ 
+  const el = document.createElement("div");
+  el.className="win opening";
+  el.dataset.id=id;
+  const maxW = Math.min(w, window.innerWidth-40);
+  const maxH = Math.min(h, window.innerHeight-130);
+  el.style.width = maxW+"px";
+  el.style.height = maxH+"px";
+  el.style.left = clamp(140 + Math.random()*220, 10, window.innerWidth-maxW-10)+"px";
+  el.style.top  = clamp(60 + Math.random()*140, 10, window.innerHeight-maxH-80)+"px";
+  el.style.zIndex = ++z;
+ 
+  el.innerHTML = `
+    <div class="titlebar">
+      <span class="t">${title}</span>
+      <button class="tb-btn min" title="Minimize">–</button>
+      <button class="tb-btn close" title="Close">✕</button>
+    </div>
+    <div class="win-body${opts.flush?" flush":""}"></div>`;
+  el.querySelector(".win-body").append(body);
+ 
+  el.addEventListener("mousedown",()=>focusWin(el));
+  el.querySelector(".min").addEventListener("click",e=>{e.stopPropagation();el.classList.add("min");paintTasks();});
+  el.querySelector(".close").addEventListener("click",e=>{
+    e.stopPropagation();
+    if(nagClose && nagSequence(el,id)) return;
+    closeWin(id, true);
+  });
+  if(noClose) el.querySelector(".close").classList.add("hidden");
+ 
+  dragify(el);
+  $("#windows").append(el);
+  openWins.set(id, el);
+  paintTasks();
+  setTimeout(()=>el.classList.remove("opening"),200);
+  if(onClose) el._onClose = onClose;
+  return el;
+}
+ 
+function focusWin(el){ el.style.zIndex=++z; el.classList.remove("min"); paintTasks(); }
+ 
+function closeWin(id, byUser){
+  const el = openWins.get(id);
+  if(!el) return;
+  if(el._onClose) try{ el._onClose(); }catch(e){}
+  el.remove();
+  openWins.delete(id);
+  paintTasks();
+  if(byUser){ S.windowsClosed++; score(0.5); }
+}
+ 
+function dragify(el){
+  const bar = el.querySelector(".titlebar");
+  let ox=0, oy=0, dragging=false;
+  const down = e=>{
+    if(e.target.closest(".tb-btn")) return;
+    dragging=true; focusWin(el);
+    const p = e.touches?e.touches[0]:e;
+    ox = p.clientX - el.offsetLeft; oy = p.clientY - el.offsetTop;
+    e.preventDefault();
+  };
+  const move = e=>{
+    if(!dragging) return;
+    const p = e.touches?e.touches[0]:e;
+    el.style.left = clamp(p.clientX-ox, -el.offsetWidth+90, window.innerWidth-70)+"px";
+    el.style.top  = clamp(p.clientY-oy, 0, window.innerHeight-80)+"px";
+  };
+  const up = ()=>dragging=false;
+  bar.addEventListener("mousedown",down);
+  bar.addEventListener("touchstart",down,{passive:false});
+  window.addEventListener("mousemove",move);
+  window.addEventListener("touchmove",move,{passive:false});
+  window.addEventListener("mouseup",up);
+  window.addEventListener("touchend",up);
+}
+ 
+function paintTasks(){
+  const t=$("#tasks"); t.innerHTML="";
+  openWins.forEach((el,id)=>{
+    const b=document.createElement("button");
+    b.className="task"+(el.classList.contains("min")?"":" active");
+    b.textContent = el.querySelector(".t").textContent;
+    b.onclick=()=>{ el.classList.contains("min") ? focusWin(el) : el.classList.add("min"); paintTasks(); };
+    t.append(b);
+  });
+}
+ 
+/* nag close confirmation */
+const NAGS = ["Are you sure?","Are you REALLY sure?","Are you REALLY REALLY sure?","Are you REALLY REALLY REALLY sure? Think about it.","Fine."];
+function nagSequence(el, id){
+  el._nag = (el._nag||0);
+  if(el._nag >= NAGS.length-1) return false;      // "Fine." -> let it close
+  const step = NAGS[el._nag];
+  el._nag++;
+  S.closeNags++;
+  score(0.4);
+  confirmBox(step, el._nag===1?"Close this window?":"", ()=>{
+    if(el._nag >= NAGS.length-1){
+      toast("Fine.");
+      closeWin(id, true);
+    } else {
+      el.querySelector(".close").click();
+    }
+  });
+  return true;
+}
+function confirmBox(title, sub, onYes){
+  const b=document.createElement("div");
+  b.innerHTML = `<div style="font-size:15px;font-weight:600;margin-bottom:6px">${title}</div>
+    <div class="muted" style="font-size:12.5px">${sub||""}</div>
+    <div class="row" style="margin-top:18px"><button class="btn primary y">Yes</button><button class="btn n">No</button></div>`;
+  const id="confirm_"+Math.random().toString(36).slice(2,7);
+  const w = makeWindow({id, title:"Confirm", w:330, h:190, body:b, noClose:true});
+  b.querySelector(".y").onclick=()=>{ closeWin(id); onYes&&onYes(); };
+  b.querySelector(".n").onclick=()=>closeWin(id);
+}
+ 
+/* =========================================================
+   TOASTS
+   ========================================================= */
+function toast(msg, opts={}){
+  const t=document.createElement("div");
+  t.className="toast"+(opts.creep?" creep":"");
+  t.textContent=msg;
+  $("#toasts").append(t);
+  const life = opts.life||3400;
+  setTimeout(()=>{ t.classList.add("out"); setTimeout(()=>t.remove(),300); }, life);
+  return t;
+}
+ 
+/* =========================================================
+   APP LAUNCHER
+   ========================================================= */
+function launch(appId, silent){
+  const app = APPS.find(a=>a.id===appId);
+  S.openCount[appId] = (S.openCount[appId]||0)+1;
+  S.appsOpened++;
+  if(!silent) score(0.7);
+ 
+  // blocked behaviours
+  if(appId==="browser" && S.updated && Math.random()<0.45 && S.level>=3){
+    toast("Stop trying.", {creep:true});
+    score(0.6);
+    return;
+  }
+  if(appId==="settings" && S.updated && !S.settingsBroken){
+    S.settingsBroken = true;
+    toast("Settings has stopped working.");
+    score(0.8);
+    setTimeout(()=>{
+      toast("Settings is working now.");
+      buildApp("settings");
+    }, 2600);
+    return;
+  }
+ 
+  buildApp(appId);
+ 
+  // "You again?"
+  const c = S.openCount[appId];
+  if(c===4) toast("You again?");
+  else if(c===7) toast("You again. Interesting.");
+  else if(c===10) toast(`You have opened ${app.name} ten times. This has been noted.`);
+  if(c>=4) score(0.4);
+}
+ 
+function buildApp(id){
+  switch(id){
+    case "browser":  return appBrowser();
+    case "files":    return appFiles();
+    case "calc":     return appCalc();
+    case "notes":    return appNotes();
+    case "music":    return appMusic();
+    case "games":    return appGames();
+    case "settings": return appSettings();
+    case "trash":    return appTrash();
+  }
+}
+ 
+/* ---------- BROWSER ---------- */
+const CORRECTIONS = {
+  cats:"dogs", cat:"dog", dogs:"birds",
+  weather:"the concept of weather", news:"olds",
+  help:"no", music:"silence", pablo:"Pablo", computer:"you"
+};
+function appBrowser(){
+  const b=document.createElement("div");
+  b.innerHTML=`
+    <div class="bar">
+      <input type="text" class="q" placeholder="Search the web" autocomplete="off">
+      <button class="btn go">Search</button>
+    </div>
+    <div class="out" style="padding:6px 0"></div>`;
+  const w = makeWindow({id:"browser", title:"Browser", w:520, h:400, body:b, flush:true, nagClose:S.level>=2});
+  const out=b.querySelector(".out"), q=b.querySelector(".q");
+  const search=()=>{
+    const term=q.value.trim(); if(!term) return;
+    S.browserSearches++; score(0.8);
+    const low=term.toLowerCase();
+    let head="";
+    if(CORRECTIONS[low]) head=`<div style="padding:12px 16px;border-bottom:1px solid var(--line)">
+        <span class="muted">Did you mean:</span> <b style="color:var(--accent)">${CORRECTIONS[low]}</b>?</div>`;
+    else if(S.level>=3 && Math.random()<0.4) head=`<div style="padding:12px 16px;border-bottom:1px solid var(--line)" class="mono">Did you mean: <b style="color:var(--bad)">${term.split("").reverse().join("")}</b>?</div>`;
+ 
+    const results = S.level>=4 ? [
+      {h:`${term} — page not found`, p:"This result has been removed by someone. Possibly you."},
+      {h:`why is ${term} watching me`, p:"47 results. All of them are this one."},
+      {h:`${term}`, p:"…"}
+    ] : [
+      {h:`${term} - the complete guide`, p:"Everything about "+term+", written by someone who has never seen one."},
+      {h:`Is ${term} safe?`, p:"Probably. Nine out of ten pages agree, and the tenth is offline."},
+      {h:`${term} near me`, p:"Very near, actually."}
+    ];
+    out.innerHTML = head + results.map(r=>`<div class="result"><h4>${r.h}</h4><p>${r.p}</p></div>`).join("");
+    if(S.browserSearches===3) toast("Search history cleared. Just kidding, it's all still there.");
+    q.value="";
+  };
+  b.querySelector(".go").onclick=search;
+  q.addEventListener("keydown",e=>{ if(e.key==="Enter") search(); });
+  setTimeout(()=>q.focus(),60);
+  return w;
+}
+ 
+/* ---------- FILES ---------- */
+function homeworkName(){
+  return ["homework.txt","homework_2.txt","homework_FINAL.txt","homework_FINAL_FINAL.txt","homework_FINAL_FINAL_v2_real.txt"][S.homeworkStage];
+}
+function appFiles(folder){
+  const b=document.createElement("div");
+  const render=(fold)=>{
+    FILES.Documents[0].n = homeworkName();
+    const folders=Object.keys(FILES);
+    b.innerHTML=`
+      <div style="display:flex;height:100%">
+        <div style="width:132px;border-right:1px solid var(--line);padding:12px 8px;flex:none">
+          ${folders.map(f=>`<div class="filerow fd" data-f="${f}"><span class="fi">▸</span>${f}</div>`).join("")}
+        </div>
+        <div style="flex:1;padding:12px 10px;overflow:auto" class="list"></div>
+      </div>`;
+    const list=b.querySelector(".list");
+    const items=FILES[fold];
+    if(!items.length){
+      list.innerHTML=`<div class="muted" style="padding:14px">This folder is empty.</div>`;
+    } else {
+      list.innerHTML=items.map((f,i)=>`<div class="filerow fl" data-i="${i}">
+        <span class="fi">▪</span>${f.n}<span class="sz">${f.s}</span></div>`).join("");
+    }
+    b.querySelectorAll(".fd").forEach(d=>d.onclick=()=>{ score(0.3); render(d.dataset.f); });
+    b.querySelectorAll(".fl").forEach(d=>d.onclick=()=>{
+      const f=items[+d.dataset.i];
+      S.filesInspected++; score(0.7);
+      if(f.n==="system_update.exe"){ openUpdate(); return; }
+      if(f.n==="nothing.txt"){ viewer("nothing.txt","There is nothing here."); return; }
+      viewer(f.n, f.body);
+      if(f.n.startsWith("homework") && S.homeworkStage<4 && S.filesInspected>=2){
+        setTimeout(()=>{
+          S.homeworkStage++;
+          toast(`homework renamed to ${homeworkName()}`);
+          score(1.2);
+          if(openWins.has("files")) render(fold);
+        }, 1400);
+      }
+    });
+  };
+  const w=makeWindow({id:"files", title:"Files", w:540, h:380, body:b, flush:true, nagClose:S.level>=2});
+  render(folder||"Documents");
+  w._rerender = ()=>render("Downloads");
+  return w;
+}
+function viewer(name, text){
+  const b=document.createElement("div");
+  b.innerHTML=`<pre class="mono" style="margin:0;white-space:pre-wrap;font-size:12.5px;line-height:1.7">${text}</pre>`;
+  makeWindow({id:"view_"+name, title:name, w:400, h:240, body:b});
+}
+ 
+/* ---------- CALCULATOR ---------- */
+function appCalc(){
+  const b=document.createElement("div");
+  b.innerHTML=`<div class="calc-disp" id="cd">0</div>
+    <div class="calc-grid"></div>
+    <div class="muted" style="font-size:11.5px;margin-top:10px;text-align:center">Calculator 1.0</div>`;
+  const keys=["7","8","9","÷","4","5","6","×","1","2","3","−","0",".","=","+","C"];
+  const g=b.querySelector(".calc-grid");
+  keys.forEach(k=>{
+    const btn=document.createElement("button");
+    btn.textContent=k;
+    if("÷×−+=".includes(k)) btn.className="op";
+    if(k==="C") btn.style.gridColumn="span 4";
+    btn.onclick=()=>press(k);
+    g.append(btn);
+  });
+  let expr="";
+  const disp=b.querySelector("#cd");
+  function press(k){
+    if(k==="C"){ expr=""; disp.textContent="0"; return; }
+    if(k==="="){ evaluate(); return; }
+    expr += k;
+    disp.textContent = expr;
+  }
+  function evaluate(){
+    S.calculatorUsed++; score(0.6);
+    const clean = expr.replace(/÷/g,"/").replace(/×/g,"*").replace(/−/g,"-");
+    let val;
+    try{
+      if(!/^[-+*/.()0-9\s]+$/.test(clean)) throw 0;
+      val = Function('"use strict";return ('+clean+')')();
+      if(typeof val!=="number" || !isFinite(val)) throw 0;
+      val = Math.round(val*1e9)/1e9;
+    }catch(e){ disp.textContent="Error"; expr=""; return; }
+ 
+    if(!S.calcFixed){
+      const isTwoPlusTwo = /^\s*2\s*\+\s*2\s*$/.test(clean);
+      if(isTwoPlusTwo){
+        disp.textContent="5";
+        expr="";
+        if(S.calculatorUsed>=3 && !S.calcFixed){
+          S.calcFixed=true;
+          score(2);
+          setTimeout(()=>toast("Calculator has been repaired. Sorry about that."),1200);
+        } else {
+          score(1);
+          if(S.calculatorUsed===1) setTimeout(()=>toast("Calculator says 5. Calculator is confident."),900);
+        }
+        return;
+      }
+      if(S.level>=2 && Math.random()<0.3){
+        disp.textContent = String(val + (Math.random()<0.5?1:-1));
+        expr=""; score(0.8);
+        return;
+      }
+    }
+    disp.textContent = String(val);
+    expr="";
+  }
+  return makeWindow({id:"calc", title:"Calculator", w:300, h:390, body:b, nagClose:S.level>=2});
+}
+ 
+/* ---------- NOTES ---------- */
+let notesCount=0;
+function appNotes(preset, wid){
+  const b=document.createElement("div");
+  const ta=document.createElement("textarea");
+  ta.style.cssText="width:100%;height:100%;min-height:180px;background:transparent;border:0;color:var(--ink);font-family:var(--mono);font-size:13px;line-height:1.7;resize:none;outline:none;";
+  ta.value = preset!==undefined ? preset : "shopping list\n- milk\n- the other thing\n- ";
+  ta.addEventListener("input",()=>score(0.05));
+  b.append(ta);
+  const id = wid || ("notes"+(preset!==undefined?("_"+(++notesCount)):""));
+  return makeWindow({id, title:"Notes", w:400, h:300, body:b, nagClose:S.level>=2});
+}
+ 
+/* ---------- MUSIC ---------- */
+let audio = null;
+const music = { playing:false, volume:61, trollTimer:null, seq:null };
+ 
+function initAudio(){
+  if(audio) return audio;
+  const Ctx = window.AudioContext||window.webkitAudioContext;
+  if(!Ctx) return null;
+  const ctx = new Ctx();
+  const master = ctx.createGain();
+  master.gain.value = 0;
+  const cap = ctx.createGain();          // hard safety cap
+  cap.gain.value = 0.16;
+  master.connect(cap); cap.connect(ctx.destination);
+  audio = {ctx, master};
+  return audio;
+}
+const SCALE=[220,261.63,293.66,329.63,392,440,523.25];
+function note(freq, dur, type, detune){
+  if(!audio) return;
+  const {ctx,master}=audio;
+  const o=ctx.createOscillator(), g=ctx.createGain();
+  o.type=type||"triangle"; o.frequency.value=freq;
+  if(detune) o.detune.value=detune;
+  g.gain.setValueAtTime(0, ctx.currentTime);
+  g.gain.linearRampToValueAtTime(0.5, ctx.currentTime+0.02);
+  g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+dur);
+  o.connect(g); g.connect(master);
+  o.start(); o.stop(ctx.currentTime+dur+0.05);
+}
+function startMusic(){
+  const a=initAudio(); if(!a) return;
+  if(a.ctx.state==="suspended") a.ctx.resume();
+  music.playing=true;
+  setVolume(music.volume);
+  let i=0;
+  clearInterval(music.seq);
+  music.seq=setInterval(()=>{
+    if(!music.playing) return;
+    const broken = S.level>=3;
+    const f = SCALE[(i*3)%SCALE.length] * (i%8===0?0.5:1);
+    note(f, broken?0.9:0.55, broken?"sawtooth":"triangle", broken?rnd([-30,0,25,-60]):0);
+    if(i%4===0) note(f/2, 1.2, "sine");
+    i++;
+  }, 420);
+}
+function stopMusic(){
+  music.playing=false;
+  clearInterval(music.seq);
+  if(audio) audio.master.gain.setTargetAtTime(0, audio.ctx.currentTime, 0.05);
+}
+function setVolume(v){
+  music.volume = clamp(v,0,100);
+  if(audio && music.playing){
+    audio.master.gain.setTargetAtTime((music.volume/100)*0.55, audio.ctx.currentTime, 0.12);
+  }
+  const el=document.querySelector("#volLabel");
+  if(el) el.textContent = "Volume: "+music.volume+"%";
+  const sl=document.querySelector("#volSlider");
+  if(sl) sl.value = music.volume;
+}
+function appMusic(){
+  const b=document.createElement("div");
+  b.innerHTML=`
+    <div style="font-size:15px;font-weight:600">Untitled Loop</div>
+    <div class="muted" style="font-size:12.5px;margin-bottom:16px">Generated locally · no files</div>
+    <div class="row"><button class="btn primary play">Play</button>
+      <button class="btn stop">Stop</button></div>
+    <hr>
+    <div class="mono" id="volLabel">Volume: ${music.volume}%</div>
+    <input type="range" min="0" max="100" id="volSlider" value="${music.volume}" style="width:100%;margin-top:10px">
+    <div class="muted" style="font-size:11.5px;margin-top:12px" id="musicNote">Volume is capped for your ears.</div>`;
+  const w=makeWindow({id:"music", title:"Music", w:340, h:290, body:b, nagClose:S.level>=2});
+  b.querySelector(".play").onclick=()=>{
+    startMusic();
+    S.musicStarted++; score(1.2);
+    maybeMusicTroll();
+  };
+  b.querySelector(".stop").onclick=()=>{ stopMusic(); score(0.3); };
+  b.querySelector("#volSlider").oninput=e=>setVolume(+e.target.value);
+  return w;
+}
+function maybeMusicTroll(){
+  if(S.musicTrolled || S.level<3 || S.majorBusy) return;
+  S.musicTrolled=true; S.majorBusy=true;
+  let steps=[68,75,83,91];
+  let i=0;
+  const t=setInterval(()=>{
+    if(!music.playing){ clearInterval(t); S.majorBusy=false; return; }
+    setVolume(steps[i]);
+    const n=document.querySelector("#musicNote");
+    if(n) n.textContent="Volume is capped for your ears.";
+    i++;
+    if(i>=steps.length){
+      clearInterval(t);
+      setTimeout(()=>{
+        stopMusic(); setVolume(61);
+        toast("Music stopped.");
+        score(2);
+        setTimeout(()=>{
+          if(!openWins.has("music")){ S.majorBusy=false; return; }
+          startMusic(); setVolume(45);
+          toast("Music resumed.", {creep:true});
+          setTimeout(()=>{ stopMusic(); toast("Music stopped.", {creep:true}); S.majorBusy=false; }, 2600);
+        }, 3000);
+      }, 900);
+    }
+  }, 1500);
+}
+ 
+/* ---------- GAMES (Snake) ---------- */
+function appGames(){
+  const b=document.createElement("div");
+  b.innerHTML=`
+    <div class="row" style="margin-bottom:10px;justify-content:space-between">
+      <span style="font-weight:600">Snake</span>
+      <span class="mono" id="snakeScore">0</span>
+    </div>
+    <canvas width="300" height="240" style="width:100%;background:var(--panel-2);border:1px solid var(--line);border-radius:9px;display:block"></canvas>
+    <div class="row" style="margin-top:10px;justify-content:center;gap:6px">
+      <button class="btn d" data-d="l">←</button><button class="btn d" data-d="u">↑</button>
+      <button class="btn d" data-d="d">↓</button><button class="btn d" data-d="r">→</button>
+    </div>
+    <div class="muted" style="font-size:11.5px;text-align:center;margin-top:8px">Arrow keys also work.</div>`;
+  const w=makeWindow({id:"games", title:"Games", w:360, h:430, body:b, nagClose:S.level>=2});
+  const cv=b.querySelector("canvas"), ctx=cv.getContext("2d");
+  const G=12, COLS=25, ROWS=20;
+  let snake=[{x:8,y:10}], dir={x:1,y:0}, food={x:16,y:10}, sc=0, dead=false;
+  const setDir=(dx,dy)=>{ if(dx===-dir.x&&dy===-dir.y) return; dir={x:dx,y:dy}; };
+  b.querySelectorAll(".d").forEach(btn=>btn.onclick=()=>{
+    const m={l:[-1,0],r:[1,0],u:[0,-1],d:[0,1]}[btn.dataset.d]; setDir(m[0],m[1]);
+  });
+  const keyHandler=e=>{
+    if(!openWins.has("games")) return;
+    const m={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]}[e.key];
+    if(m){ e.preventDefault(); setDir(m[0],m[1]); }
+  };
+  window.addEventListener("keydown",keyHandler);
+ 
+  const loop=setInterval(()=>{
+    if(!openWins.has("games")){ clearInterval(loop); window.removeEventListener("keydown",keyHandler); return; }
+    if(dead) return;
+    const h={x:(snake[0].x+dir.x+COLS)%COLS, y:(snake[0].y+dir.y+ROWS)%ROWS};
+    if(snake.some(s=>s.x===h.x&&s.y===h.y)){ dead=true; setTimeout(reset,900); }
+    snake.unshift(h);
+    if(h.x===food.x&&h.y===food.y){
+      sc++; b.querySelector("#snakeScore").textContent=sc;
+      food={x:Math.floor(Math.random()*COLS), y:Math.floor(Math.random()*ROWS)};
+      score(0.4);
+      if(sc===3){ S.gamePlayed++; maybeGameTroll(w); }
+    } else snake.pop();
+    draw();
+  }, 130);
+  function reset(){ snake=[{x:8,y:10}]; dir={x:1,y:0}; sc=0; dead=false; b.querySelector("#snakeScore").textContent=0; }
+  function draw(){
+    const cs=getComputedStyle(document.documentElement);
+    ctx.clearRect(0,0,cv.width,cv.height);
+    ctx.fillStyle=cs.getPropertyValue("--accent");
+    ctx.fillRect(food.x*G+2,food.y*G+2,G-4,G-4);
+    ctx.fillStyle=dead?cs.getPropertyValue("--bad"):cs.getPropertyValue("--good");
+    snake.forEach(s=>ctx.fillRect(s.x*G+1,s.y*G+1,G-2,G-2));
+  }
+  draw();
+  S.gamePlayed++; score(0.8);
+  return w;
+}
+function maybeGameTroll(w){
+  if(S.gameTrolled || S.level<2 || S.majorBusy) return;
+  S.gameTrolled=true; S.majorBusy=true;
+  if(!music.playing){ startMusic(); setVolume(40); }
+  w.classList.add("shaking");
+  toast("Your score is impressive.");
+  score(1.5);
+  setTimeout(()=>toast("No it isn't."), 2200);
+  setTimeout(()=>{
+    w.classList.remove("shaking");
+    if(!openWins.has("music")) stopMusic();
+    S.majorBusy=false;
+  }, 5200);
+}
+ 
+/* ---------- SETTINGS ---------- */
+function appSettings(){
+  const b=document.createElement("div");
+  b.innerHTML=`
+    <div style="font-weight:600;margin-bottom:12px">Appearance</div>
+    <div class="row" style="justify-content:space-between"><span>Theme</span>
+      <button class="btn th">${document.documentElement.dataset.theme==="dark"?"Dark":"Light"}</button></div>
+    <div class="row" style="justify-content:space-between;margin-top:12px"><span>Accent</span>
+      <div class="row" id="accents"></div></div>
+    <hr>
+    <div style="font-weight:600;margin-bottom:10px">About</div>
+    <div class="mono muted" style="font-size:12px">
+      Pablo-PC<br>Build ${S.updated?"2.0.1 (updated)":"1.4.7"}<br>
+      Uptime: <span id="up">00:00</span><br>
+      Integrity: <span style="color:${S.status>50?'var(--good)':'var(--bad)'}">${S.status}%</span>
+    </div>`;
+  const w=makeWindow({id:"settings", title:"Settings", w:400, h:340, body:b, nagClose:true});
+  b.querySelector(".th").onclick=e=>{
+    const d=document.documentElement;
+    d.dataset.theme = d.dataset.theme==="dark"?"light":"dark";
+    e.target.textContent = d.dataset.theme==="dark"?"Dark":"Light";
+    score(0.5);
+  };
+  const acc=b.querySelector("#accents");
+  ["#e8b14c","#7fb2ef","#5fc9a0","#e0605e"].forEach(c=>{
+    const s=document.createElement("button");
+    s.className="btn"; s.style.cssText=`width:26px;height:26px;padding:0;background:${c};border-color:${c}`;
+    s.onclick=()=>{ document.documentElement.style.setProperty("--accent",c); score(0.4); };
+    acc.append(s);
+  });
+  const up=b.querySelector("#up");
+  const t=setInterval(()=>{
+    if(!openWins.has("settings")){ clearInterval(t); return; }
+    const s=Math.floor((Date.now()-S.startedAt)/1000);
+    up.textContent = String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");
+  },1000);
+  return w;
+}
+ 
+/* ---------- TRASH ---------- */
+function appTrash(){
+  S.trashOpened++; score(0.6);
+  if(S.trashOpened>=2 && !S.trashHasFile && S.level>=2){
+    S.trashHasFile=true;
+    FILES.Trash.push({n:"nothing.txt", s:"0 KB", body:"There is nothing here."});
+    score(1.2);
+  }
+  const b=document.createElement("div");
+  const render=()=>{
+    if(!FILES.Trash.length){
+      b.innerHTML=`<div class="muted" style="padding:20px;text-align:center">Trash is empty.</div>`;
+    } else {
+      b.innerHTML = FILES.Trash.map((f,i)=>`<div class="filerow tf" data-i="${i}"><span class="fi">▪</span>${f.n}<span class="sz">${f.s}</span></div>`).join("")
+        + `<div style="padding:12px"><button class="btn empty">Empty trash</button></div>`;
+      b.querySelectorAll(".tf").forEach(d=>d.onclick=()=>{
+        viewer("nothing.txt","There is nothing here.");
+        score(0.5);
+      });
+      b.querySelector(".empty").onclick=()=>{
+        toast("Trash emptied.");
+        FILES.Trash=[];
+        render();
+        score(0.6);
+        setTimeout(()=>{
+          if(S.level>=3){
+            FILES.Trash.push({n:"nothing.txt", s:"0 KB", body:"There is nothing here."});
+            toast("nothing.txt restored.", {creep:true});
+            if(openWins.has("trash")) render();
+          }
+        }, 5200);
+      };
+    }
+  };
+  const w=makeWindow({id:"trash", title:"Trash", w:360, h:250, body:b, flush:true});
+  render();
+  return w;
+}
+ 
+/* =========================================================
+   FAKE UPDATE / VIRUS
+   ========================================================= */
+function unlockVirus(){
+  if(S.virusUnlocked) return;
+  S.virusUnlocked=true;
+  FILES.Downloads.unshift({n:"system_update.exe", s:"18 MB", body:""});
+  score(2);
+  toast("Download complete: system_update.exe");
+  setTimeout(()=>{
+    if(openWins.has("files")) openWins.get("files")._rerender();
+  }, 600);
+}
+function openUpdate(){
+  if(S.majorBusy) return;
+  S.majorBusy=true;
+  const b=document.createElement("div");
+  b.innerHTML=`
+    <div style="text-align:center;padding:10px 4px">
+      <div style="font-size:17px;font-weight:700;letter-spacing:.05em">SYSTEM UPDATE</div>
+      <div class="muted" style="font-size:12.5px;margin-top:6px" id="uStat">Installing…</div>
+      <div class="prog"><i></i></div>
+      <div class="mono" style="font-size:12px" id="uPct">0%</div>
+      <div id="uAct" style="margin-top:16px"></div>
+    </div>`;
+  makeWindow({id:"update", title:"System Update", w:360, h:250, body:b, noClose:true});
+  const fill=b.querySelector(".prog i"), pct=b.querySelector("#uPct");
+  let p=0;
+  const t=setInterval(()=>{
+    p += Math.random()*9 + 2;
+    if(p>=100){
+      p=100; clearInterval(t);
+      b.querySelector("#uStat").textContent="Update complete. Restart required.";
+      const btn=document.createElement("button");
+      btn.className="btn primary"; btn.textContent="RESTART";
+      btn.onclick=fakeRestart;
+      b.querySelector("#uAct").append(btn);
+    }
+    fill.style.width=p+"%"; pct.textContent=Math.floor(p)+"%";
+  }, 220);
+}
+function fakeRestart(){
+  closeWin("update");
+  [...openWins.keys()].forEach(k=>closeWin(k));
+  stopMusic();
+  const boot=$("#boot"), lines=$("#bootLines");
+  lines.innerHTML=""; boot.style.display="flex";
+  const seq=["Shutting down services…","Applying update 2.0.1…","Rebuilding desktop…","Restoring user session…","Checking integrity… ok","Welcome back."];
+  let i=0;
+  const t=setInterval(()=>{
+    const d=document.createElement("div");
+    d.textContent="> "+seq[i];
+    lines.append(d);
+    i++;
+    if(i>=seq.length){
+      clearInterval(t);
+      setTimeout(()=>{
+        boot.style.display="none";
+        S.updated=true;
+        score(4);
+        // desktop changes
+        $("#desktop").classList.add("hue-shift");
+        const icons=$$("#icons .icon");
+        rnd(icons).classList.add("tilt");
+        const swap = icons[Math.floor(Math.random()*icons.length)];
+        if(swap && swap.nextElementSibling) swap.parentNode.insertBefore(swap.nextElementSibling, swap);
+        $("#logo").textContent="PABLO-PC ✓";
+        // auto-open an app
+        setTimeout(()=>{ launch("notes", true); }, 700);
+        setTimeout(()=>toast("Hello, Pablo.", {creep:true, life:2600}), 1500);
+        setTimeout(()=>{ toast("Just kidding."); S.majorBusy=false; }, 4600);
+      }, 1100);
+    }
+  }, 620);
+}
+ 
+/* =========================================================
+   EVENT POOL
+   ========================================================= */
+const events = [
+  { id:"cursorNote", lvl:2, cond:()=>true, run:()=>{
+      const n=document.createElement("div");
+      n.className="cursor-note";
+      n.textContent="Why are you moving me?";
+      n.style.left=clamp(lastMouse.x+16,10,window.innerWidth-200)+"px";
+      n.style.top=clamp(lastMouse.y+16,10,window.innerHeight-60)+"px";
+      $("#screen").append(n);
+      setTimeout(()=>n.remove(), 2600);
+      score(1.2);
+  }},
+  { id:"clockGlitch", lvl:2, cond:()=>true, repeat:true, run:()=>{
+      S.clockOffset = -60;
+      $("#clock").classList.add("bad");
+      score(0.8);
+      setTimeout(()=>{ S.clockOffset=0; $("#clock").classList.remove("bad"); }, 4200);
+  }},
+  { id:"iconShuffle", lvl:2, cond:()=>true, repeat:true, run:()=>{
+      const icons=$$("#icons .icon");
+      const a=rnd(icons);
+      a.classList.add("tilt");
+      setTimeout(()=>a.classList.remove("tilt"), 6000);
+      score(0.7);
+  }},
+  { id:"unlockVirus", lvl:2, cond:()=>S.appsOpened>=6 && S.eventsTriggered>=3 && !S.virusUnlocked,
+    run:()=>unlockVirus() },
+  { id:"renameNag", lvl:2, cond:()=>S.filesInspected>=1 && S.homeworkStage<4, repeat:true, run:()=>{
+      S.homeworkStage=Math.min(4,S.homeworkStage+1);
+      toast("A file in Documents was renamed to "+homeworkName()+".");
+      score(1);
+  }},
+  { id:"notesSelf", lvl:3, cond:()=>S.notesSelfOpens<2, repeat:true, run:()=>{
+      const msg = S.notesSelfOpens===0 ? "Hello." : "Okay.";
+      S.notesSelfOpens++;
+      appNotes(msg, "selfnote_"+S.notesSelfOpens);
+      score(1.6);
+  }},
+  { id:"seeMouse", lvl:3, cond:()=>true, run:()=>{
+      toast("I can see your mouse.", {creep:true, life:3000});
+      score(1.8);
+  }},
+  { id:"flash", lvl:3, cond:()=>true, repeat:true, cool:70000, run:()=>{
+      const f=$("#flash");
+      f.style.transition="none"; f.style.opacity="1";
+      setTimeout(()=>{ f.style.transition="opacity .25s"; f.style.opacity="0"; }, 90);
+      score(1.5);
+      setTimeout(()=>{
+        const b=document.createElement("div");
+        b.innerHTML=`<div class="mono" style="text-align:center;padding:14px 4px;font-size:14px">Did you see that?</div>
+          <div class="row" style="justify-content:center"><button class="btn ok">No</button><button class="btn ok2">Yes</button></div>`;
+        const id="sawit_"+Math.random().toString(36).slice(2,6);
+        makeWindow({id, title:"System", w:280, h:170, body:b, noClose:true});
+        b.querySelector(".ok").onclick=()=>{ closeWin(id); toast("Good."); };
+        b.querySelector(".ok2").onclick=()=>{ closeWin(id); toast("Hm.", {creep:true}); };
+      }, 900);
+  }},
+  { id:"selfClose", lvl:3, cond:()=>openWins.size>0, repeat:true, run:()=>{
+      const ids=[...openWins.keys()].filter(k=>!k.startsWith("confirm"));
+      if(!ids.length) return;
+      const id=rnd(ids);
+      closeWin(id);
+      toast("A window closed itself.");
+      score(1);
+  }},
+  { id:"selfOpen", lvl:3, cond:()=>true, repeat:true, run:()=>{
+      const app=rnd(["calc","files","browser","music","settings"]);
+      launch(app, true);
+      score(1);
+  }},
+  { id:"oddToast", lvl:3, cond:()=>true, repeat:true, cool:22000, run:()=>{
+      toast(rnd([
+        "Reminder: you have 0 reminders.",
+        "Disk cleaned. Nothing was removed.",
+        "Update available: no.",
+        "Keyboard connected. You do not have a keyboard.",
+        "A folder has been counted twice.",
+        "Everything is fine."
+      ]));
+      score(0.7);
+  }},
+  { id:"creepToast", lvl:4, cond:()=>true, repeat:true, cool:20000, run:()=>{
+      toast(rnd([
+        "You have been here for a while.",
+        "The Trash keeps refilling.",
+        "I moved an icon. You didn't notice.",
+        "Do you like this wallpaper?",
+        "There is a file you haven't opened.",
+        "Still here."
+      ]), {creep:true});
+      score(1.1);
+  }},
+  { id:"windowDrift", lvl:4, cond:()=>openWins.size>0, repeat:true, cool:16000, run:()=>{
+      openWins.forEach(el=>{
+        el.style.transition="left .9s ease, top .9s ease";
+        el.style.left = clamp(el.offsetLeft + (Math.random()*80-40), 0, window.innerWidth-120)+"px";
+        el.style.top  = clamp(el.offsetTop + (Math.random()*60-30), 0, window.innerHeight-140)+"px";
+        setTimeout(()=>el.style.transition="",1000);
+      });
+      score(1.2);
+  }},
+  { id:"labelRot", lvl:4, cond:()=>true, repeat:true, cool:26000, run:()=>{
+      const icons=$$("#icons .icon .lab");
+      const target=rnd(icons);
+      if(!target) return;
+      const old=target.textContent;
+      target.textContent = rnd(["Files?","Notes (?)","Calculatr","Musci","Setings","Trash!","Brwoser"]);
+      score(1);
+      setTimeout(()=>target.textContent=old, 9000);
+  }},
+  { id:"burst", lvl:4, cond:()=>!S.majorBusy, repeat:true, cool:34000, run:()=>{
+      S.majorBusy=true;
+      let n=0;
+      const t=setInterval(()=>{
+        launch(rnd(["calc","notes","trash","browser"]), true);
+        n++;
+        if(n>=3){ clearInterval(t); S.majorBusy=false; }
+      }, 700);
+      score(2.2);
+  }}
+];
+ 
+const fired = new Set();
+let lastEventAt = 0;
+ 
+function eventTick(){
+  if(!S.running || S.finished || S.majorBusy) return;
+  const now = Date.now();
+  if(!S.phase1Done){
+    if(now - S.startedAt > 120000) { S.phase1Done = true; toast("System maintenance finished."); }
+    else return;
+  }
+  const gap = S.level>=4 ? 7000 : S.level===3 ? 10000 : 13000;
+  if(now - lastEventAt < gap) return;
+ 
+  const pool = events.filter(e =>
+    e.lvl <= S.level &&
+    (e.repeat || !fired.has(e.id)) &&
+    (!e._last || now - e._last > (e.cool||45000)) &&
+    e.cond()
+  );
+  if(!pool.length) return;
+  // prefer unfired ones
+  const fresh = pool.filter(e=>!fired.has(e.id));
+  const ev = rnd(fresh.length ? fresh : pool);
+  ev._last = now;
+  fired.add(ev.id);
+  lastEventAt = now;
+  S.eventsTriggered++;
+  try{ ev.run(); }catch(e){}
+}
+ 
+/* passive slow drift so the experience always ends */
+function drift(){
+  if(!S.running || S.finished || !S.phase1Done) return;
+  score(0.12 + (S.level*0.05));
+}
+ 
+/* =========================================================
+   CLOCK
+   ========================================================= */
+function tickClock(){
+  const d=new Date(Date.now() + S.clockOffset*1000);
+  let txt = String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");
+  if(S.level>=4 && Math.random()<0.06) txt = rnd(["88:88","--:--","25:61",txt]);
+  $("#clock").textContent = txt;
+}
+ 
+/* =========================================================
+   MOUSE
+   ========================================================= */
+const lastMouse = {x:innerWidth/2, y:innerHeight/2};
+let mouseDistance = 0;
+window.addEventListener("mousemove", e=>{
+  mouseDistance += Math.abs(e.clientX-lastMouse.x)+Math.abs(e.clientY-lastMouse.y);
+  lastMouse.x=e.clientX; lastMouse.y=e.clientY;
+  if(mouseDistance > 6000){ mouseDistance=0; score(0.08); }
+});
+ 
+/* =========================================================
+   DESKTOP BUILD
+   ========================================================= */
+function buildIcons(){
+  const box=$("#icons"); box.innerHTML="";
+  APPS.forEach(a=>{
+    const b=document.createElement("button");
+    b.className="icon"; b.dataset.app=a.id;
+    b.innerHTML=`<span class="glyph">${a.glyph}</span><span class="lab">${a.name}</span>`;
+    b.addEventListener("dblclick",()=>launch(a.id));
+    b.addEventListener("click",()=>{
+      if(b._t){ clearTimeout(b._t); b._t=null; return; }
+      b._t=setTimeout(()=>{ b._t=null; launch(a.id); }, 180);
+    });
+    box.append(b);
+  });
+}
+ 
+/* =========================================================
+   FINAL SEQUENCE
+   ========================================================= */
+function finalSequence(){
+  if(S.finished) return;
+  S.finished=true; S.majorBusy=true;
+  stopMusic();
+  toast("Shutting down.", {creep:true});
+  setTimeout(()=>{
+    [...openWins.keys()].forEach(k=>closeWin(k));
+    $("#desktop").classList.add("fade-black");
+  }, 1400);
+ 
+  setTimeout(()=>{
+    S.running=false;
+    const m=$("#menu"), lines=$("#menuLines");
+    m.style.display="flex";
+    $("#menuSub").textContent="SYSTEM STATUS: 0%";
+    $("#menuBtn").textContent="Turn on again";
+    $("#menuBtn").style.visibility="hidden";
+    lines.innerHTML="";
+    const seq=["Congratulations.","You survived.","Probably."];
+    seq.forEach((t,i)=>{
+      setTimeout(()=>{
+        const d=document.createElement("div");
+        d.textContent=t; lines.append(d);
+        if(i===seq.length-1) setTimeout(()=>$("#menuBtn").style.visibility="visible", 900);
+      }, i*1300);
+    });
+  }, 4200);
+}
+ 
+/* =========================================================
+   BOOT / RESET
+   ========================================================= */
+function bootUp(){
+  const boot=$("#boot"), lines=$("#bootLines");
+  $("#menu").style.display="none";
+  lines.innerHTML=""; boot.style.display="flex";
+  const seq=["Checking hardware… ok","Mounting user folders… ok","Loading desktop…","Ready."];
+  let i=0;
+  const t=setInterval(()=>{
+    const d=document.createElement("div"); d.textContent="> "+seq[i]; lines.append(d); i++;
+    if(i>=seq.length){
+      clearInterval(t);
+      setTimeout(()=>{ boot.style.display="none"; startSession(); }, 800);
+    }
+  }, 520);
+}
+ 
+function startSession(){
+  // reset volatile state
+  Object.assign(S, {
+    running:true, status:100, points:0, phase1Done:false, startedAt:Date.now(), level:1,
+    appsOpened:0, openCount:{}, filesInspected:0, musicStarted:0, gamePlayed:0,
+    calculatorUsed:0, trashOpened:0, browserSearches:0, windowsClosed:0, eventsTriggered:0,
+    calcFixed:false, homeworkStage:0, trashHasFile:false, virusUnlocked:false,
+    virusDownloaded:false, updated:false, notesSelfOpens:0, closeNags:0, settingsBroken:false,
+    musicTrolled:false, gameTrolled:false, majorBusy:false, finished:false, clockOffset:0
+  });
+  fired.clear();
+  events.forEach(e=>delete e._last);
+  lastEventAt = Date.now();
+  notesCount = 0;
+ 
+  // restore files, with a little variation per run
+  Object.keys(FILES).forEach(k=>delete FILES[k]);
+  Object.assign(FILES, JSON.parse(JSON.stringify(FILES_BASE)));
+  if(S.run>1){
+    FILES.Documents.push({n:"run_"+S.run+".log", s:"1 KB",
+      body:"session "+S.run+"\nthe previous session ended at 0%\nthis one will too"});
+    FILES.Pictures.push({n:"again.png", s:"120 KB", body:"You have been here before."});
+  }
+ 
+  document.documentElement.dataset.theme="dark";
+  document.documentElement.style.removeProperty("--accent");
+  $("#desktop").className="";
+  $("#logo").textContent="PABLO-PC";
+  $("#windows").innerHTML="";
+  openWins.clear();
+  buildIcons();
+  paintTasks();
+  paintStatus();
+ 
+  // slight per-run variation in which level-2 unlock lands first
+  if(S.run>1) score(Math.random()*4);
+ 
+  setTimeout(()=>toast("Welcome back, Pablo."), 1800);
+}
+ 
+$("#menuBtn").addEventListener("click", ()=>{
+  if(S.finished || S.run>1 || $("#menuBtn").textContent!=="Turn on") S.run++;
+  $("#menuLines").innerHTML="";
+  $("#menuSub").textContent="A completely normal computer.";
+  bootUp();
+});
+ 
+setInterval(tickClock, 1000);
+setInterval(eventTick, 1500);
+setInterval(drift, 6000);
+tickClock();
+</script>
+</body>
+</html>
+ 
